@@ -2,18 +2,21 @@
 
 *The land of Pim is failing. Oppresed by the Great Vilnius Empire, striped of its resources and history, the people look for a saviour. In to this void step the Pirates of Pim, privateers who seek to throw off the yolk of oppression and free their people. As the Pirate's successes grow, the Empire sends Arch Duke Gediminas to crush them and restore order to Pim.*
 
-## Details
-
-### Tools and Resources
+## Resources
 
 - Framework: [Python Arcade](https://pythonhosted.org/arcade/index.html "Python Arcade")
 - Base Assets: [Pirate Pack](http://kenney.nl/assets/pirate-pack "Pirate Pack")
 - Support Assets: None
 - Genre: Shoot 'em Up
-- Project Management: [Plundering Pirates of Pim Trello](https://trello.com/b/KyhPjpRT/plundering-pirates-of-pim 'Plundering Pirates of Pim Trello')
 
-### Gameplay and Rules
-**Goal:** *To traverse the level, sinking enemy ships, destroying their forts, avoiding running aground, all the while styaing alive and plundering loot.*
+## Tools
+
+- [PyCharm](https://www.jetbrains.com/pycharm/ "PyCharm")
+- Project Management: [Plundering Pirates of Pim Trello](https://trello.com/b/KyhPjpRT/plundering-pirates-of-pim 'Plundering Pirates of Pim Trello')
+- [GitHub](https://github.com/froomzy/game-prototype-one "GitHub")
+
+## Gameplay and Design
+**Goal:** *Traverse the level, sinking enemy ships, destroying their forts, avoiding running aground, all the while styaing alive and plundering loot.*
 
 The player will have one **life**. They make take several hits, which cost them their health resource, **crew**. They have a limit on **crew**, which can be replenished by **pickups**. They may also gain and lose extra **crew** slots via different kinds of **pickups**.
 

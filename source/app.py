@@ -59,11 +59,16 @@ class MyApplication(arcade.Window):
             file_name='../assets/sprites/tiles_sheet.png',
             image_location_list=tile_coordinates
         )
-        level = pytmx.TiledMap('../assets/levels/pim-test-1.tmx')
-        self.load_layer(layer=level.get_layer_by_name('water'))
-        self.load_layer(layer=level.get_layer_by_name('overlay'))
-        self.load_layer(layer=level.get_layer_by_name('land'))
-        self.load_layer(layer=level.get_layer_by_name('props'))
+        level = pytmx.TiledMap('../assets/levels/pim-test-2.tmx')
+        print(level.layers[0].image)
+
+
+        # self.load_layer(layer=level.get_layer_by_name('water'))
+        # self.load_layer(layer=level.get_layer_by_name('overlay'))
+        # self.load_layer(layer=level.get_layer_by_name('land'))
+        # self.load_layer(layer=level.get_layer_by_name('props'))
+
+
 
         # for layer in level.layers:
         #     for tile in layer

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="13" height="10" tilewidth="64" tileheight="64" nextobjectid="6">
+ <imagelayer name="background">
+  <image source="pim-test-1.png" width="832" height="640"/>
+ </imagelayer>
+ <objectgroup name="collisions">
+  <object id="2" x="385" y="4" width="59" height="53">
+   <ellipse/>
+  </object>
+  <object id="3" x="325" y="585" width="51" height="46">
+   <ellipse/>
+  </object>
+  <object id="4" x="15" y="396" width="39" height="38">
+   <ellipse/>
+  </object>
+  <object id="5" x="257" y="68">
+   <polygon points="0,0 39,2 65,57 64,144 56,222 33,239 -12,249 -102,244 -124,208 -128,163 -102,139 -64,126 -62,66 -59,30 -37,12"/>
+  </object>
+ </objectgroup>
+</map>

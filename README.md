@@ -1,6 +1,6 @@
 # Plundering Pirates of Pim!
 
-*The land of Pim is failing. Oppresed by the Great Vilnius Empire, striped of its resources and history, the people look for a saviour. In to this void step the Pirates of Pim, privateers who seek to throw off the yolk of oppression and free their people. As the Pirate's successes grow, the Empire sends Arch Duke Gediminas to crush them and restore order to Pim.*
+*The land of Pim is failing. Oppressed by the Great Vilnius Empire, striped of its resources and history, the people look for a saviour. In to this void step the Pirates of Pim, privateers who seek to throw off the yolk of oppression and free their people. As the Pirate's successes grow, the Empire sends Arch Duke Gediminas to crush them and restore order to Pim.*
 
 ## Resources
 
@@ -14,6 +14,7 @@
 - [PyCharm](https://www.jetbrains.com/pycharm/ "PyCharm")
 - Project Management: [Plundering Pirates of Pim Trello](https://trello.com/b/KyhPjpRT/plundering-pirates-of-pim 'Plundering Pirates of Pim Trello')
 - [GitHub](https://github.com/froomzy/game-prototype-one "GitHub")
+- [Tiled](http://www.mapeditor.org/ "Tiled")
 
 ## Gameplay and Design
 **Goal:** *Traverse the level, sinking enemy ships, destroying their forts, avoiding running aground, all the while styaing alive and plundering loot.*

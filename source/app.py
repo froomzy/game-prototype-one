@@ -78,7 +78,7 @@ class MyApplication(arcade.Window):
         sprite.set_position(center_x=400, center_y=300)
         sprite.set_texture(0)
         sprite.angle = 180
-        self.all_sprites_list.append(sprite)`
+        self.all_sprites_list.append(sprite)
         # Don't show the mouse cursor
         self.set_mouse_visible(False)
 

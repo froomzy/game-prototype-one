@@ -22,6 +22,7 @@ class MyApplication(arcade.Window):
         self.all_sprites_list = None
         self.sprite_sheet = None
         self.tile_set = None
+        self.viewport_bottom = 0.0
 
     def load_layer(self, layer):
         for tile in layer.tiles():
@@ -30,7 +31,8 @@ class MyApplication(arcade.Window):
             x, y = tile_texture_positions[0] / 64, tile_texture_positions[1] / 64
             offset = y * 16 + x
             tile_sprite.append_texture(self.tile_set[int(offset)])
-            tile_sprite.set_position(center_x=32 + tile[0]* 64, center_y=32 + (9 - tile[1]) * 64)
+            print(tile[0], tile[1])
+            tile_sprite.set_position(center_x=32 + tile[0]* 64, center_y=32 + (70 - tile[1]) * 64)
             tile_sprite.set_texture(0)
             self.all_sprites_list.append(tile_sprite)
 
@@ -59,14 +61,12 @@ class MyApplication(arcade.Window):
             file_name='../assets/sprites/tiles_sheet.png',
             image_location_list=tile_coordinates
         )
-        level = pytmx.TiledMap('../assets/levels/pim-test-2.tmx')
-        print(level.layers[0].image)
+        level = pytmx.TiledMap('../assets/levels/pim-test-3.tmx')
 
-
-        # self.load_layer(layer=level.get_layer_by_name('water'))
-        # self.load_layer(layer=level.get_layer_by_name('overlay'))
-        # self.load_layer(layer=level.get_layer_by_name('land'))
-        # self.load_layer(layer=level.get_layer_by_name('props'))
+        self.load_layer(layer=level.get_layer_by_name('water'))
+        self.load_layer(layer=level.get_layer_by_name('overlay'))
+        self.load_layer(layer=level.get_layer_by_name('land'))
+        self.load_layer(layer=level.get_layer_by_name('props'))
 
 
 
@@ -74,10 +74,11 @@ class MyApplication(arcade.Window):
         #     for tile in layer
         # Then make a sprite, and then give it the texture
         sprite = arcade.Sprite()
-        sprite.append_texture(self.sprite_sheet[84])
+        sprite.append_texture(self.sprite_sheet[85])
         sprite.set_position(center_x=400, center_y=300)
         sprite.set_texture(0)
-        self.all_sprites_list.append(sprite)
+        sprite.angle = 180
+        self.all_sprites_list.append(sprite)`
         # Don't show the mouse cursor
         self.set_mouse_visible(False)
 
@@ -88,7 +89,14 @@ class MyApplication(arcade.Window):
         """ Movement and game logic """
         sprite = self.all_sprites_list[-1]
         delta_angle = 36.0 * delta_time
-        sprite.angle += delta_angle
+        self.viewport_bottom += 64 * delta_time
+        if self.viewport_bottom > ((70 * 64) - 600):
+            self.viewport_bottom = ((70 * 64) - 600)
+
+        if sprite.position[1] < self.viewport_bottom + 55:
+            sprite.set_position(center_x=sprite.position[0], center_y=self.viewport_bottom + 55)
+        arcade.set_viewport(left=0, right=800, bottom=int(self.viewport_bottom), top=int(self.viewport_bottom) + 600)
+        # sprite.angle += delta_angle
         sprite.update()
 
     def on_draw(self):

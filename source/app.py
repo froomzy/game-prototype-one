@@ -74,7 +74,7 @@ class MyApplication(arcade.Window):
         self.load_layer(layer=level.get_layer_by_name('water'))
         self.load_layer(layer=level.get_layer_by_name('overlay'))
         self.load_layer(layer=level.get_layer_by_name('land'))
-        # self.load_layer(layer=level.get_layer_by_name('props'))
+        self.load_layer(layer=level.get_layer_by_name('props'))
 
         for sprite in self.all_sprites_list:
             x = sprite.position[0]
@@ -109,26 +109,12 @@ class MyApplication(arcade.Window):
         delta_angle = 36.0 * delta_time
         viewport_delta = 64 * delta_time
         self.viewport_bottom = int(self.viewport_bottom + viewport_delta)
-        print(self.viewport_bottom, self.player_sprite.position[1])
 
         if self.viewport_bottom > ((70 * 64) - SCREEN_HEIGHT):
             self.viewport_bottom = ((70 * 64) - SCREEN_HEIGHT)
 
-        # x = self.player_sprite.position[0]
-        # y = self.player_sprite.position[1] - viewport_delta
-        # self.player_sprite.set_position(center_x=x, center_y=y)
-        # if self.player_sprite.position[1] < self.viewport_bottom:
-        #     self.player_sprite.set_position(center_x=self.player_sprite.position[0], center_y=self.viewport_bottom)
-        # print(int(self.viewport_bottom), int(self.viewport_bottom) + SCREEN_HEIGHT)
-        # print(0, SCREEN_WIDTH)
-
         self.own_scrolling(viewport_delta)
-        # arcade.set_viewport(left=0, right=SCREEN_WIDTH, bottom=int(self.viewport_bottom), top=int(self.viewport_bottom) + SCREEN_HEIGHT)
-        # arcade.set_viewport(left=0, right=800, bottom=int(self.viewport_bottom), top=int(self.viewport_bottom) + 600)
-        # sprite.angle += delta_angle
         self.player_sprite.update()
-        # self.dispatch_event('on_close')
-        # arcade.pause(0.3)
 
     def on_draw(self):
         """

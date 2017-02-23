@@ -1,4 +1,5 @@
 import random
+from collections import defaultdict
 
 import pytmx
 from lxml import etree
@@ -8,8 +9,8 @@ from arcade import load_textures
 
 SPRITE_SCALING = 0.5
 
-SCREEN_WIDTH = 1600
-SCREEN_HEIGHT = 1200
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 800
 
 
 class MyApplication(arcade.Window):
@@ -23,7 +24,9 @@ class MyApplication(arcade.Window):
         self.player_sprite = None
         self.sprite_sheet = None
         self.tile_set = None
-        self.viewport_bottom = 128.0
+        self.viewport_bottom = 64.0
+        self.input_map = defaultdict(lambda: 0.0)
+        self.input_map['ACCELERATION'] = (0, 0)
 
     def load_layer(self, layer):
         for tile in layer.tiles():
@@ -82,7 +85,7 @@ class MyApplication(arcade.Window):
 
         self.player_sprite = arcade.Sprite()
         self.player_sprite.append_texture(self.sprite_sheet[85])
-        self.player_sprite.set_position(center_x=400, center_y=300)
+        self.player_sprite.set_position(center_x=SCREEN_WIDTH * 0.5, center_y=self.viewport_bottom + 55)
         self.player_sprite.set_texture(0)
         self.player_sprite.angle = 180
 
@@ -99,7 +102,8 @@ class MyApplication(arcade.Window):
 
     def animate(self, delta_time):
         """ Movement and game logic """
-
+        if self.input_map['USER_BREAK']:
+            self.dispatch_event('on_close')
         viewport_delta = 64 * delta_time
         self.viewport_bottom = int(self.viewport_bottom + viewport_delta)
 
@@ -107,6 +111,23 @@ class MyApplication(arcade.Window):
             self.viewport_bottom = ((70 * 64) - SCREEN_HEIGHT)
 
         self.own_scrolling(viewport_delta)
+
+        self.player_sprite.position[0] += self.input_map['ACCELERATION'][0] * viewport_delta
+        self.player_sprite.position[1] += self.input_map['ACCELERATION'][1] * viewport_delta
+
+        if self.player_sprite.position[1] - 55 < 0:
+            self.player_sprite.position[1] = 55
+
+        if self.player_sprite.position[1] + 55 > SCREEN_HEIGHT:
+            self.player_sprite.position[1] = SCREEN_HEIGHT - 55
+
+        print(self.player_sprite.position[0] + 28,  SCREEN_WIDTH)
+        if self.player_sprite.position[0] + 28 > SCREEN_WIDTH:
+            self.player_sprite.position[0] = SCREEN_WIDTH - 28
+
+        if self.player_sprite.position[0] - 28 < 0:
+            self.player_sprite.position[0] = 28
+
         self.player_sprite.update()
 
     def on_draw(self):
@@ -122,15 +143,29 @@ class MyApplication(arcade.Window):
         self.player_sprite.draw()
 
     def on_key_press(self, symbol: int, modifiers: int):
-        if symbol == arcade.key.ESCAPE and not (modifiers & ~(arcade.key.MOD_NUMLOCK |
-                                                              arcade.key.MOD_CAPSLOCK |
-                                                              arcade.key.MOD_SCROLLLOCK)):
-            self.dispatch_event('on_close')
+        is_modified = (modifiers & ~(arcade.key.MOD_NUMLOCK | arcade.key.MOD_CAPSLOCK | arcade.key.MOD_SCROLLLOCK))
+        if symbol == arcade.key.ESCAPE and not is_modified:
+            self.input_map['USER_BREAK'] = True
 
+        up, down, left, right = 0.0, 0.0, 0.0, 0.0
+
+        if symbol == arcade.key.W and not is_modified:
+            up = 1.0
+        if symbol == arcade.key.S and not is_modified:
+            down = 1.0
+        if symbol == arcade.key.A and not is_modified:
+            left = 1.0
+        if symbol == arcade.key.D and not is_modified:
+            right = 1.0
+
+        y = up - down
+        x = right - left
+
+        self.input_map['ACCELERATION'] = (x, y)
 
 window = MyApplication(SCREEN_WIDTH, SCREEN_HEIGHT)
 window.set_fullscreen()
-
+SCREEN_WIDTH, SCREEN_HEIGHT = window.get_size()
 window.setup()
 
 arcade.run()

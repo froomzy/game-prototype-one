@@ -45,7 +45,6 @@ class MyApplication(arcade.Window):
 
     def setup(self):
         self.all_sprites_list = arcade.SpriteList()
-        # Need to load the sprite sheet, then get the texture region out of the sprite sheet
         sprite_coordinates = []
         with open('../assets/sprites/shipsMiscellaneous_sheet.xml') as texture_atlas:
             tree = etree.parse(texture_atlas)
@@ -68,7 +67,6 @@ class MyApplication(arcade.Window):
             file_name='../assets/sprites/tiles_sheet.png',
             image_location_list=tile_coordinates
         )
-        # self.tile_set = self.load_tiles()
         level = pytmx.TiledMap('../assets/levels/pim-test-3.tmx')
 
         self.load_layer(layer=level.get_layer_by_name('water'))
@@ -82,19 +80,14 @@ class MyApplication(arcade.Window):
             sprite.set_position(center_x=x, center_y=y)
             sprite.update()
 
-        # for layer in level.layers:
-        #     for tile in layer
-        # Then make a sprite, and then give it the texture
         self.player_sprite = arcade.Sprite()
         self.player_sprite.append_texture(self.sprite_sheet[85])
         self.player_sprite.set_position(center_x=400, center_y=300)
         self.player_sprite.set_texture(0)
         self.player_sprite.angle = 180
 
-        # Don't show the mouse cursor
         self.set_mouse_visible(False)
 
-        # Set the background color
         arcade.set_background_color(arcade.color.AMARANTH)
 
     def own_scrolling(self, viewport_delta):
@@ -106,7 +99,7 @@ class MyApplication(arcade.Window):
 
     def animate(self, delta_time):
         """ Movement and game logic """
-        delta_angle = 36.0 * delta_time
+
         viewport_delta = 64 * delta_time
         self.viewport_bottom = int(self.viewport_bottom + viewport_delta)
 

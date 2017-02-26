@@ -176,6 +176,20 @@ class MyApplication(arcade.Window):
 
         self.player_sprite.update()
 
+        player_bounds = [(self.player_sprite.position[0] - 28, self.player_sprite.position[1] - 55),
+                         (self.player_sprite.position[0] - 28, self.player_sprite.position[1] + 55),
+                         (self.player_sprite.position[0] + 28, self.player_sprite.position[1] + 55),
+                         (self.player_sprite.position[0] + 28, self.player_sprite.position[1] - 55)]
+
+        for collider in self.collisions:
+            if self.test_collision(player_bounds, collider):
+                print('Collision @', self.player_sprite.position)
+
+    def test_collision(self, bounding_box, collider: Collider):
+        if collider.is_polygon:
+            return arcade.are_polygons_intersecting(bounding_box, collider.points)
+        return False
+
     def on_draw(self) -> None:
         """
         Render the screen.
@@ -186,15 +200,15 @@ class MyApplication(arcade.Window):
 
         # Draw all the sprites.
         self.all_sprites_list.draw()
-        total_height = 70 * 64
-        for collision in self.collisions:
-            if collision.is_polygon:
-                for point in collision.points:
-                    arcade.draw_points(collision.points, arcade.color.AMARANTH, 3)
-                arcade.draw_polygon_outline(collision.points, arcade.color.AMARANTH, 3)
-            else:
-                arcade.draw_point(collision.center_x, collision.center_y, arcade.color.AMARANTH, 3)
-                arcade.draw_circle_outline(collision.center_x, collision.center_y, collision.radius, arcade.color.AMARANTH, 3)
+        if __debug__:
+            for collision in self.collisions:
+                if collision.is_polygon:
+                    for point in collision.points:
+                        arcade.draw_points(collision.points, arcade.color.AMARANTH, 3)
+                    arcade.draw_polygon_outline(collision.points, arcade.color.AMARANTH, 3)
+                else:
+                    arcade.draw_point(collision.center_x, collision.center_y, arcade.color.AMARANTH, 3)
+                    arcade.draw_circle_outline(collision.center_x, collision.center_y, collision.radius, arcade.color.AMARANTH, 3)
         self.player_sprite.draw()
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
@@ -221,7 +235,6 @@ class MyApplication(arcade.Window):
             self.input_map['ACCELERATION'] = (0.0, self.input_map['ACCELERATION'][1])
         if symbol == arcade.key.D and not is_modified:
             self.input_map['ACCELERATION'] = (0.0, self.input_map['ACCELERATION'][1])
-
 
 
 window = MyApplication(SCREEN_WIDTH, SCREEN_HEIGHT)

@@ -1,5 +1,6 @@
 import random
 from collections import defaultdict
+from typing import List
 
 import pytmx
 from lxml import etree
@@ -11,6 +12,31 @@ SPRITE_SCALING = 0.5
 
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
+
+
+class Collider:
+    def __init__(self, tmxObject: pytmx.TiledObject, total_height: int) -> None:
+        self.center_x = tmxObject.x
+        self.center_y = tmxObject.y
+        self.radius = 10
+        if hasattr(tmxObject, 'points'):
+            self.center_x = tmxObject.x
+            self.center_y = tmxObject.y
+            self.is_polygon = True
+            self.points = []
+            for point in tmxObject.points:
+                self.points.append((point[0], total_height - point[1]))
+        else:
+            self.is_polygon = False
+            self.width = tmxObject.width
+            self.height = tmxObject.height
+            self.radius = tmxObject.width * 0.5
+            self.center_x = tmxObject.x + self.width * 0.5
+            self.center_y = tmxObject.y + self.height * 0.5
+
+        self.center_y = total_height - self.center_y
+        self.type = tmxObject.type
+        self.name = tmxObject.name
 
 
 class MyApplication(arcade.Window):
@@ -26,9 +52,10 @@ class MyApplication(arcade.Window):
         self.tile_set = None
         self.viewport_bottom = 64.0
         self.input_map = defaultdict(lambda: 0.0)
-        self.input_map['ACCELERATION'] = (0, 0)
+        self.input_map['ACCELERATION'] = (0.0, 0.0)
+        self.collisions = []
 
-    def load_layer(self, layer):
+    def load_layer(self, layer: pytmx.TiledTileLayer) -> None:
         for tile in layer.tiles():
             tile_sprite = arcade.Sprite()
             tile_texture_positions = tile[2][1]
@@ -39,14 +66,14 @@ class MyApplication(arcade.Window):
             tile_sprite.set_texture(0)
             self.all_sprites_list.append(tile_sprite)
 
-    def load_tiles(self):
+    def load_tiles(self) -> List[arcade.Texture]:
         tile_set = []
         for idx in range(1, 97):
             texture = arcade.load_texture('../assets/sprites/tiles/tile_{:0>2}.png'.format(idx))
             tile_set.append(texture)
         return tile_set
 
-    def setup(self):
+    def setup(self) -> None:
         self.all_sprites_list = arcade.SpriteList()
         sprite_coordinates = []
         with open('../assets/sprites/shipsMiscellaneous_sheet.xml') as texture_atlas:
@@ -77,6 +104,11 @@ class MyApplication(arcade.Window):
         self.load_layer(layer=level.get_layer_by_name('land'))
         self.load_layer(layer=level.get_layer_by_name('props'))
 
+        for collision in level.get_layer_by_name('collisions'):
+            total_height = 70 * 64
+            collider = Collider(tmxObject=collision, total_height=total_height)
+            self.collisions.append(collider)
+
         for sprite in self.all_sprites_list:
             x = sprite.position[0]
             y = int(sprite.position[1] - self.viewport_bottom)
@@ -93,14 +125,28 @@ class MyApplication(arcade.Window):
 
         arcade.set_background_color(arcade.color.AMARANTH)
 
-    def own_scrolling(self, viewport_delta):
+    def own_scrolling(self, viewport_delta: float) -> None:
         for sprite in self.all_sprites_list:
             x = sprite.position[0]
             y = int(sprite.position[1] - viewport_delta)
             sprite.set_position(center_x=x, center_y=y)
             sprite.update()
 
-    def animate(self, delta_time):
+        for collider in self.collisions:
+            if collider.is_polygon:
+                points = []
+                for point in collider.points:
+                    x = point[0]
+                    y = int(point[1] - viewport_delta)
+                    points.append((x, y))
+                collider.points = points
+            else:
+                x = collider.center_x
+                y = int(collider.center_y - viewport_delta)
+                collider.center_x = x
+                collider.center_y = y
+
+    def animate(self, delta_time: float) -> None:
         """ Movement and game logic """
         if self.input_map['USER_BREAK']:
             self.dispatch_event('on_close')
@@ -109,6 +155,7 @@ class MyApplication(arcade.Window):
 
         if self.viewport_bottom > ((70 * 64) - SCREEN_HEIGHT):
             self.viewport_bottom = ((70 * 64) - SCREEN_HEIGHT)
+            viewport_delta = 0.0
 
         self.own_scrolling(viewport_delta)
 
@@ -121,7 +168,6 @@ class MyApplication(arcade.Window):
         if self.player_sprite.position[1] + 55 > SCREEN_HEIGHT:
             self.player_sprite.position[1] = SCREEN_HEIGHT - 55
 
-        print(self.player_sprite.position[0] + 28,  SCREEN_WIDTH)
         if self.player_sprite.position[0] + 28 > SCREEN_WIDTH:
             self.player_sprite.position[0] = SCREEN_WIDTH - 28
 
@@ -130,7 +176,7 @@ class MyApplication(arcade.Window):
 
         self.player_sprite.update()
 
-    def on_draw(self):
+    def on_draw(self) -> None:
         """
         Render the screen.
         """
@@ -140,28 +186,43 @@ class MyApplication(arcade.Window):
 
         # Draw all the sprites.
         self.all_sprites_list.draw()
+        total_height = 70 * 64
+        for collision in self.collisions:
+            if collision.is_polygon:
+                for point in collision.points:
+                    arcade.draw_points(collision.points, arcade.color.AMARANTH, 3)
+                arcade.draw_polygon_outline(collision.points, arcade.color.AMARANTH, 3)
+            else:
+                arcade.draw_point(collision.center_x, collision.center_y, arcade.color.AMARANTH, 3)
+                arcade.draw_circle_outline(collision.center_x, collision.center_y, collision.radius, arcade.color.AMARANTH, 3)
         self.player_sprite.draw()
 
-    def on_key_press(self, symbol: int, modifiers: int):
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
         is_modified = (modifiers & ~(arcade.key.MOD_NUMLOCK | arcade.key.MOD_CAPSLOCK | arcade.key.MOD_SCROLLLOCK))
         if symbol == arcade.key.ESCAPE and not is_modified:
             self.input_map['USER_BREAK'] = True
 
-        up, down, left, right = 0.0, 0.0, 0.0, 0.0
-
         if symbol == arcade.key.W and not is_modified:
-            up = 1.0
+            self.input_map['ACCELERATION'] = (self.input_map['ACCELERATION'][0], 1.0)
         if symbol == arcade.key.S and not is_modified:
-            down = 1.0
+            self.input_map['ACCELERATION'] = (self.input_map['ACCELERATION'][0], -1.0)
         if symbol == arcade.key.A and not is_modified:
-            left = 1.0
+            self.input_map['ACCELERATION'] = (-1.0, self.input_map['ACCELERATION'][1])
         if symbol == arcade.key.D and not is_modified:
-            right = 1.0
+            self.input_map['ACCELERATION'] = (1.0, self.input_map['ACCELERATION'][1])
 
-        y = up - down
-        x = right - left
+    def on_key_release(self, symbol: int, modifiers: int) -> None:
+        is_modified = (modifiers & ~(arcade.key.MOD_NUMLOCK | arcade.key.MOD_CAPSLOCK | arcade.key.MOD_SCROLLLOCK))
+        if symbol == arcade.key.W and not is_modified:
+            self.input_map['ACCELERATION'] = (self.input_map['ACCELERATION'][0], 0.0)
+        if symbol == arcade.key.S and not is_modified:
+            self.input_map['ACCELERATION'] = (self.input_map['ACCELERATION'][0], 0.0)
+        if symbol == arcade.key.A and not is_modified:
+            self.input_map['ACCELERATION'] = (0.0, self.input_map['ACCELERATION'][1])
+        if symbol == arcade.key.D and not is_modified:
+            self.input_map['ACCELERATION'] = (0.0, self.input_map['ACCELERATION'][1])
 
-        self.input_map['ACCELERATION'] = (x, y)
+
 
 window = MyApplication(SCREEN_WIDTH, SCREEN_HEIGHT)
 window.set_fullscreen()

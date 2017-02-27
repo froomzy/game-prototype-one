@@ -1,12 +1,11 @@
-import random
 from collections import defaultdict
 from typing import List
 
-import pytmx
-from lxml import etree
-
 import arcade
+import pytmx
 from arcade import load_textures
+from lxml import etree
+import euclid
 
 SPRITE_SCALING = 0.5
 
@@ -52,7 +51,11 @@ class MyApplication(arcade.Window):
         self.tile_set = None
         self.viewport_bottom = 64.0
         self.input_map = defaultdict(lambda: 0.0)
-        self.input_map['ACCELERATION'] = (0.0, 0.0)
+        self.velocity = euclid.Vector2(0.0, 0.0)
+        self.input_map['FORWARD'] = euclid.Vector2(0.0, 0.0)
+        self.input_map['BACKWARD'] = euclid.Vector2(0.0, 0.0)
+        self.input_map['LEFT'] = euclid.Vector2(0.0, 0.0)
+        self.input_map['RIGHT'] = euclid.Vector2(0.0, 0.0)
         self.collisions = []
 
     def load_layer(self, layer: pytmx.TiledTileLayer) -> None:
@@ -159,8 +162,14 @@ class MyApplication(arcade.Window):
 
         self.own_scrolling(viewport_delta)
 
-        self.player_sprite.position[0] += self.input_map['ACCELERATION'][0] * viewport_delta
-        self.player_sprite.position[1] += self.input_map['ACCELERATION'][1] * viewport_delta
+        position = euclid.Vector2(self.player_sprite.position[0], self.player_sprite.position[1])
+
+        acceleration = (self.input_map['FORWARD'] + self.input_map['BACKWARD'] + self.input_map['LEFT'] + self.input_map['RIGHT']) * 100
+
+        centre = position + (acceleration * delta_time)
+
+        self.player_sprite.position[0] = centre.x
+        self.player_sprite.position[1] = centre.y
 
         if self.player_sprite.position[1] - 55 < 0:
             self.player_sprite.position[1] = 55
@@ -188,6 +197,14 @@ class MyApplication(arcade.Window):
     def test_collision(self, bounding_box, collider: Collider):
         if collider.is_polygon:
             return arcade.are_polygons_intersecting(bounding_box, collider.points)
+        else:
+            if (self.player_sprite.position[0] - 55 < collider.center_x < self.player_sprite.position[0] + 55 and
+                                self.player_sprite.position[1] - 28 < collider.center_y < self.player_sprite.position[1] + 28):
+                return True
+            circle = euclid.Circle(center=euclid.Point2(collider.center_x, collider.center_y), radius=collider.radius)
+            player_centre = euclid.Point2(self.player_sprite.center_x, self.player_sprite.center_y)
+            if player_centre.distance(circle) < collider.radius:
+                return True
         return False
 
     def on_draw(self) -> None:
@@ -217,24 +234,24 @@ class MyApplication(arcade.Window):
             self.input_map['USER_BREAK'] = True
 
         if symbol == arcade.key.W and not is_modified:
-            self.input_map['ACCELERATION'] = (self.input_map['ACCELERATION'][0], 1.0)
+            self.input_map['FORWARD'] = euclid.Vector2(0, 1.0)
         if symbol == arcade.key.S and not is_modified:
-            self.input_map['ACCELERATION'] = (self.input_map['ACCELERATION'][0], -1.0)
+            self.input_map['BACKWARD'] = euclid.Vector2(0, -1.0)
         if symbol == arcade.key.A and not is_modified:
-            self.input_map['ACCELERATION'] = (-1.0, self.input_map['ACCELERATION'][1])
+            self.input_map['LEFT'] = euclid.Vector2(-1.0, 0)
         if symbol == arcade.key.D and not is_modified:
-            self.input_map['ACCELERATION'] = (1.0, self.input_map['ACCELERATION'][1])
+            self.input_map['RIGHT'] = euclid.Vector2(1.0, 0)
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         is_modified = (modifiers & ~(arcade.key.MOD_NUMLOCK | arcade.key.MOD_CAPSLOCK | arcade.key.MOD_SCROLLLOCK))
         if symbol == arcade.key.W and not is_modified:
-            self.input_map['ACCELERATION'] = (self.input_map['ACCELERATION'][0], 0.0)
+            self.input_map['FORWARD'] = euclid.Vector2(0.0, 0.0)
         if symbol == arcade.key.S and not is_modified:
-            self.input_map['ACCELERATION'] = (self.input_map['ACCELERATION'][0], 0.0)
+            self.input_map['BACKWARD'] = euclid.Vector2(0.0, 0.0)
         if symbol == arcade.key.A and not is_modified:
-            self.input_map['ACCELERATION'] = (0.0, self.input_map['ACCELERATION'][1])
+            self.input_map['LEFT'] = euclid.Vector2(0.0, 0.0)
         if symbol == arcade.key.D and not is_modified:
-            self.input_map['ACCELERATION'] = (0.0, self.input_map['ACCELERATION'][1])
+            self.input_map['RIGHT'] = euclid.Vector2(0.0, 0.0)
 
 
 window = MyApplication(SCREEN_WIDTH, SCREEN_HEIGHT)

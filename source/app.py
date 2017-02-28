@@ -192,7 +192,34 @@ class MyApplication(arcade.Window):
 
         for collider in self.collisions:
             if self.test_collision(player_bounds, collider):
-                print('Collision @', self.player_sprite.position)
+                if collider.type == 'ROCK':
+                    sprite = arcade.Sprite()
+                    sprite.append_texture(self.sprite_sheet[6])
+                    sprite.set_position(center_x=self.player_sprite.center_x, center_y=self.player_sprite.center_y - 55)
+                    sprite.set_texture(0)
+                    sprite.angle = 180
+                    self.all_sprites_list.append(sprite)
+                    shunt_x = 28 - abs(collider.center_x - self.player_sprite.center_x) * 1.1
+                    shunt_y = 55 - abs(collider.center_y - self.player_sprite.center_y) * 1.1
+
+                    if self.player_sprite.center_x > collider.center_x:
+                        shunt_x *= -1
+                    if self.player_sprite.center_y > collider.center_y:
+                        shunt_y *= -1
+                    self.player_sprite.center_x += shunt_x
+                    self.player_sprite.center_y += shunt_y
+                    self.player_sprite.update()
+                if collider.type == 'LAND':
+                    shunt_x = 28
+                    shunt_y = 55
+
+                    if self.player_sprite.center_x < collider.center_x:
+                        shunt_x *= -1
+                    if self.player_sprite.center_y < collider.center_y:
+                        shunt_y *= -1
+                    self.player_sprite.center_x += shunt_x
+                    self.player_sprite.center_y += shunt_y
+                    self.player_sprite.update()
 
     def test_collision(self, bounding_box, collider: Collider):
         if collider.is_polygon:
@@ -202,9 +229,20 @@ class MyApplication(arcade.Window):
                                 self.player_sprite.position[1] - 28 < collider.center_y < self.player_sprite.position[1] + 28):
                 return True
             circle = euclid.Circle(center=euclid.Point2(collider.center_x, collider.center_y), radius=collider.radius)
-            player_centre = euclid.Point2(self.player_sprite.center_x, self.player_sprite.center_y)
-            if player_centre.distance(circle) < collider.radius:
-                return True
+
+            bottom_left = euclid.Point2(self.player_sprite.center_x - 28, self.player_sprite.center_y - 55)
+            top_left = euclid.Point2(self.player_sprite.center_x - 28, self.player_sprite.center_y + 55)
+            top_right = euclid.Point2(self.player_sprite.center_x + 28, self.player_sprite.center_y + 55)
+            bottom_right = euclid.Point2(self.player_sprite.center_x + 28, self.player_sprite.center_y - 55)
+
+            top = euclid.LineSegment2(top_left, top_right)
+            bottom = euclid.LineSegment2(bottom_left, bottom_right)
+            left = euclid.LineSegment2(top_left, bottom_left)
+            right = euclid.LineSegment2(bottom_right, top_right)
+
+            for side in [top, right, bottom, left]:
+                if circle.intersect(side):
+                    return True
         return False
 
     def on_draw(self) -> None:

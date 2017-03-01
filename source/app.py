@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List
+from typing import List, Tuple
 
 import arcade
 import pytmx
@@ -38,6 +38,73 @@ class Collider:
         self.name = tmxObject.name
 
 
+class PlayerShip:
+    def __init__(self, x, y, texture):
+        self.sprite = arcade.Sprite()
+        self.sprite.append_texture(texture)
+        self.sprite.set_texture(0)
+
+        y += self.sprite.height * 0.5
+
+        self.sprite.set_position(center_x=x, center_y=y)
+        self.sprite.angle = 180
+        self.position = euclid.Vector2(x=x, y=y)
+        self.x = x
+        self.y = y
+
+    def bounds(self) -> Tuple[List[euclid.Point2], List[euclid.LineSegment2]]:
+        points = [
+            euclid.Point2(self.x - self.width * 0.5, self.y - self.height * 0.5),
+            euclid.Point2(self.x - self.width * 0.5, self.y + self.height * 0.5),
+            euclid.Point2(self.x + self.width * 0.5, self.y + self.height * 0.5),
+            euclid.Point2(self.x + self.width * 0.5, self.y - self.height * 0.5)
+        ]
+
+        lines = [euclid.LineSegment2(x[0], x[1]) for x in [(points[0], points[1]), (points[1], points[2]), (points[2], points[3]), (points[3], points[0])]]
+        return points, lines
+
+    def draw(self):
+        self.sprite.draw()
+
+    def update(self, x: float, y: float):
+        self.sprite.position[0] = x
+        self.x = x
+        self.sprite.position[1] = y
+        self.y = y
+        self.sprite.update()
+
+    @property
+    def bottom_left(self) -> euclid.Point2:
+        return euclid.Point2(x=self.x - self.sprite.width * 0.5, y=self.y - self.sprite.height * 0.5)
+
+    @property
+    def top_right(self) -> euclid.Point2:
+        return euclid.Point2(x=self.x + self.sprite.width * 0.5, y=self.y + self.sprite.height * 0.5)
+
+    @property
+    def width(self) -> float:
+        return self.sprite.width
+
+    @property
+    def height(self) -> float:
+        return self.sprite.height
+
+    def test_collision(self, collider: Collider):
+        points, lines = self.bounds()
+        if collider.is_polygon:
+            bounds = [(point.x, point.y) for point in points]
+            return arcade.are_polygons_intersecting(bounds, collider.points)
+        else:
+            if (self.x - self.width * 0.5 < collider.center_x < self.x - self.width * 0.5 and
+                                self.y - self.height * 0.5 < collider.center_y < self.y + self.height * 0.5):
+                return True
+            circle = euclid.Circle(center=euclid.Point2(collider.center_x, collider.center_y), radius=collider.radius)
+            for side in lines:
+                if circle.intersect(side):
+                    return True
+        return False
+
+
 class MyApplication(arcade.Window):
     """
     Main application class.
@@ -46,7 +113,7 @@ class MyApplication(arcade.Window):
     def __init__(self, width, height):
         super().__init__(width, height)
         self.all_sprites_list = None
-        self.player_sprite = None
+        self.player = None
         self.sprite_sheet = None
         self.tile_set = None
         self.viewport_bottom = 64.0
@@ -107,8 +174,8 @@ class MyApplication(arcade.Window):
         self.load_layer(layer=level.get_layer_by_name('land'))
         self.load_layer(layer=level.get_layer_by_name('props'))
 
+        total_height = 70 * 64
         for collision in level.get_layer_by_name('collisions'):
-            total_height = 70 * 64
             collider = Collider(tmxObject=collision, total_height=total_height)
             self.collisions.append(collider)
 
@@ -118,11 +185,7 @@ class MyApplication(arcade.Window):
             sprite.set_position(center_x=x, center_y=y)
             sprite.update()
 
-        self.player_sprite = arcade.Sprite()
-        self.player_sprite.append_texture(self.sprite_sheet[85])
-        self.player_sprite.set_position(center_x=SCREEN_WIDTH * 0.5, center_y=self.viewport_bottom + 55)
-        self.player_sprite.set_texture(0)
-        self.player_sprite.angle = 180
+        self.player = PlayerShip(x=SCREEN_WIDTH * 0.5, y=self.viewport_bottom, texture=self.sprite_sheet[85])
 
         self.set_mouse_visible(False)
 
@@ -162,88 +225,52 @@ class MyApplication(arcade.Window):
 
         self.own_scrolling(viewport_delta)
 
-        position = euclid.Vector2(self.player_sprite.position[0], self.player_sprite.position[1])
+        position = euclid.Vector2(self.player.x, self.player.y)
 
         acceleration = (self.input_map['FORWARD'] + self.input_map['BACKWARD'] + self.input_map['LEFT'] + self.input_map['RIGHT']) * 100
 
         centre = position + (acceleration * delta_time)
 
-        self.player_sprite.position[0] = centre.x
-        self.player_sprite.position[1] = centre.y
+        self.player.update(x=centre.x, y=centre.y)
 
-        if self.player_sprite.position[1] - 55 < 0:
-            self.player_sprite.position[1] = 55
+        if self.player.bottom_left.y < 0:
+            self.player.update(x=centre.x, y=centre.y + self.player.height * 0.5)  # Plus height
 
-        if self.player_sprite.position[1] + 55 > SCREEN_HEIGHT:
-            self.player_sprite.position[1] = SCREEN_HEIGHT - 55
+        if self.player.top_right.y > SCREEN_HEIGHT:
+            self.player.update(x=centre.x, y=centre.y - self.player.height * 0.5)  # Minus height
 
-        if self.player_sprite.position[0] + 28 > SCREEN_WIDTH:
-            self.player_sprite.position[0] = SCREEN_WIDTH - 28
+        if self.player.bottom_left.x > SCREEN_WIDTH:
+            self.player.update(x=centre.x - self.player.width * 0.5, y=centre.y)  # Minus Width
 
-        if self.player_sprite.position[0] - 28 < 0:
-            self.player_sprite.position[0] = 28
-
-        self.player_sprite.update()
-
-        player_bounds = [(self.player_sprite.position[0] - 28, self.player_sprite.position[1] - 55),
-                         (self.player_sprite.position[0] - 28, self.player_sprite.position[1] + 55),
-                         (self.player_sprite.position[0] + 28, self.player_sprite.position[1] + 55),
-                         (self.player_sprite.position[0] + 28, self.player_sprite.position[1] - 55)]
+        if self.player.top_right.x < 0:
+            self.player.update(x=centre.x + self.player.width, y=centre.y)  # Plus Width
 
         for collider in self.collisions:
-            if self.test_collision(player_bounds, collider):
+            if self.player.test_collision(collider):
                 if collider.type == 'ROCK':
                     sprite = arcade.Sprite()
                     sprite.append_texture(self.sprite_sheet[6])
-                    sprite.set_position(center_x=self.player_sprite.center_x, center_y=self.player_sprite.center_y - 55)
+                    sprite.set_position(center_x=self.player.x, center_y=self.player.y - self.player.height * 0.5)
                     sprite.set_texture(0)
                     sprite.angle = 180
                     self.all_sprites_list.append(sprite)
-                    shunt_x = 28 - abs(collider.center_x - self.player_sprite.center_x) * 1.1
-                    shunt_y = 55 - abs(collider.center_y - self.player_sprite.center_y) * 1.1
+                    shunt_x = self.player.width * 0.5 - abs(collider.center_x - self.player.x) * 1.1
+                    shunt_y = self.player.height * 0.5 - abs(collider.center_y - self.player.y) * 1.1
 
-                    if self.player_sprite.center_x > collider.center_x:
+                    if self.player.x > collider.center_x:
                         shunt_x *= -1
-                    if self.player_sprite.center_y > collider.center_y:
+                    if self.player.y > collider.center_y:
                         shunt_y *= -1
-                    self.player_sprite.center_x += shunt_x
-                    self.player_sprite.center_y += shunt_y
-                    self.player_sprite.update()
+                    self.player.update(x=self.player.x + shunt_x, y=self.player.y + shunt_y)
                 if collider.type == 'LAND':
-                    shunt_x = 28
-                    shunt_y = 55
+                    shunt_x = self.player.width * 0.5 - abs(collider.center_x - self.player.x) * 1.1
+                    shunt_y = self.player.height * 0.5 - abs(collider.center_y - self.player.y) * 1.1
 
-                    if self.player_sprite.center_x < collider.center_x:
+                    if self.player.x > collider.center_x:
                         shunt_x *= -1
-                    if self.player_sprite.center_y < collider.center_y:
+                    if self.player.y > collider.center_y:
                         shunt_y *= -1
-                    self.player_sprite.center_x += shunt_x
-                    self.player_sprite.center_y += shunt_y
-                    self.player_sprite.update()
-
-    def test_collision(self, bounding_box, collider: Collider):
-        if collider.is_polygon:
-            return arcade.are_polygons_intersecting(bounding_box, collider.points)
-        else:
-            if (self.player_sprite.position[0] - 55 < collider.center_x < self.player_sprite.position[0] + 55 and
-                                self.player_sprite.position[1] - 28 < collider.center_y < self.player_sprite.position[1] + 28):
-                return True
-            circle = euclid.Circle(center=euclid.Point2(collider.center_x, collider.center_y), radius=collider.radius)
-
-            bottom_left = euclid.Point2(self.player_sprite.center_x - 28, self.player_sprite.center_y - 55)
-            top_left = euclid.Point2(self.player_sprite.center_x - 28, self.player_sprite.center_y + 55)
-            top_right = euclid.Point2(self.player_sprite.center_x + 28, self.player_sprite.center_y + 55)
-            bottom_right = euclid.Point2(self.player_sprite.center_x + 28, self.player_sprite.center_y - 55)
-
-            top = euclid.LineSegment2(top_left, top_right)
-            bottom = euclid.LineSegment2(bottom_left, bottom_right)
-            left = euclid.LineSegment2(top_left, bottom_left)
-            right = euclid.LineSegment2(bottom_right, top_right)
-
-            for side in [top, right, bottom, left]:
-                if circle.intersect(side):
-                    return True
-        return False
+                    self.player.update(x=self.player.x + shunt_x, y=self.player.y + shunt_y)
 
     def on_draw(self) -> None:
         """
@@ -264,7 +291,7 @@ class MyApplication(arcade.Window):
                 else:
                     arcade.draw_point(collision.center_x, collision.center_y, arcade.color.AMARANTH, 3)
                     arcade.draw_circle_outline(collision.center_x, collision.center_y, collision.radius, arcade.color.AMARANTH, 3)
-        self.player_sprite.draw()
+        self.player.draw()
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         is_modified = (modifiers & ~(arcade.key.MOD_NUMLOCK | arcade.key.MOD_CAPSLOCK | arcade.key.MOD_SCROLLLOCK))

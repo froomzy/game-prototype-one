@@ -71,6 +71,7 @@ class PlayerShip:
         self.x = x
         self.sprite.position[1] = y
         self.y = y
+        self.position = euclid.Vector2(x, y)
         self.sprite.update()
 
     @property
@@ -124,6 +125,8 @@ class MyApplication(arcade.Window):
         self.input_map['LEFT'] = euclid.Vector2(0.0, 0.0)
         self.input_map['RIGHT'] = euclid.Vector2(0.0, 0.0)
         self.collisions = []
+        self.total_height = 0
+        self.tile_height = 0
 
     def load_layer(self, layer: pytmx.TiledTileLayer) -> None:
         for tile in layer.tiles():
@@ -162,21 +165,22 @@ class MyApplication(arcade.Window):
         tile_coordinates = []
         for y in range(0, 6):
             for x in range(0, 16):
-                tile_coordinates.append([int(x * 64), int(y * 64), 64, 64])
+                tile_coordinates.append([int(x * self.tile_height), int(y * self.tile_height), self.tile_height, self.tile_height])
         self.tile_set = load_textures(
             file_name='../assets/sprites/tiles_sheet.png',
             image_location_list=tile_coordinates
         )
         level = pytmx.TiledMap('../assets/levels/pim-test-3.tmx')
+        self.total_height = level.height * level.tileheight
+        self.tile_height = level.tileheight
 
         self.load_layer(layer=level.get_layer_by_name('water'))
         self.load_layer(layer=level.get_layer_by_name('overlay'))
         self.load_layer(layer=level.get_layer_by_name('land'))
         self.load_layer(layer=level.get_layer_by_name('props'))
 
-        total_height = 70 * 64
         for collision in level.get_layer_by_name('collisions'):
-            collider = Collider(tmxObject=collision, total_height=total_height)
+            collider = Collider(tmxObject=collision, total_height=self.total_height)
             self.collisions.append(collider)
 
         for sprite in self.all_sprites_list:
@@ -216,21 +220,17 @@ class MyApplication(arcade.Window):
         """ Movement and game logic """
         if self.input_map['USER_BREAK']:
             self.dispatch_event('on_close')
-        viewport_delta = 64 * delta_time
+        viewport_delta = self.tile_height * delta_time
         self.viewport_bottom = int(self.viewport_bottom + viewport_delta)
 
-        if self.viewport_bottom > ((70 * 64) - SCREEN_HEIGHT):
-            self.viewport_bottom = ((70 * 64) - SCREEN_HEIGHT)
+        if self.viewport_bottom > (self.total_height - SCREEN_HEIGHT):
+            self.viewport_bottom = (self.total_height - SCREEN_HEIGHT)
             viewport_delta = 0.0
 
         self.own_scrolling(viewport_delta)
 
-        position = euclid.Vector2(self.player.x, self.player.y)
-
         acceleration = (self.input_map['FORWARD'] + self.input_map['BACKWARD'] + self.input_map['LEFT'] + self.input_map['RIGHT']) * 100
-
-        centre = position + (acceleration * delta_time)
-
+        centre = self.player.position + (acceleration * delta_time)
         self.player.update(x=centre.x, y=centre.y)
 
         if self.player.bottom_left.y < 0:

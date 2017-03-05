@@ -2,10 +2,10 @@ from collections import defaultdict
 from typing import List, Tuple, Any
 
 import arcade
+import euclid
 import pytmx
 from arcade import load_textures
 from lxml import etree
-import euclid
 
 SPRITE_SCALING = 0.5
 
@@ -25,19 +25,19 @@ class SpawnPoint:
         self.spawns = int(tmx_object.properties.get('count', 3))
         self.texture = textures[SPAWN_TYPES.get(self.type)]
         self.has_spawned = False
+        self.total_height = total_height
 
-    def spawn(self, enemies_list: List[Any]) -> None:
+    def spawn(self, enemies_list: List['EnemyShip'], sprites: arcade.SpriteList, colliders: List['Collider']) -> None:
         x_offset = 0
         y_offset = 0
         for idx in range(self.spawns):
-            sprite = arcade.Sprite()
-            sprite.append_texture(self.texture)
-            sprite.set_position(center_x=self.center_x + x_offset, center_y=self.center_y + y_offset)
-            sprite.set_texture(0)
-            enemies_list.append(sprite)
-            y_offset += self.texture.height + 10
+            enemy = EnemyShip(x=self.center_x + x_offset, y=self.center_y + y_offset, texture=self.texture, total_height=self.total_height)
+            enemies_list.append(enemy)
+            sprites.append(enemy.sprite)
+            colliders.append(enemy.collider)
+            print(enemy.collider.name)
+            y_offset += enemy.sprite.height + 10
         self.has_spawned = True
-
 
 
 class Collider:
@@ -135,6 +135,50 @@ class PlayerShip:
         return False
 
 
+class EnemyShip:
+    def __init__(self, x: float, y: float, texture: arcade.Texture, total_height: int) -> None:
+
+        self.sprite = arcade.Sprite()
+        self.sprite.append_texture(texture)
+        self.sprite.set_texture(0)
+
+        y += self.sprite.height * 0.5
+
+        self.sprite.set_position(center_x=x, center_y=y)
+        self.position = euclid.Vector2(x=x, y=y)
+        self.x = x
+        self.y = y
+
+        points = [
+            (self.x - self.sprite.width * 0.5, total_height - (self.y - self.sprite.height * 0.5)),
+            (self.x - self.sprite.width * 0.5, total_height - (self.y + self.sprite.height * 0.5)),
+            (self.x + self.sprite.width * 0.5, total_height - (self.y + self.sprite.height * 0.5)),
+            (self.x + self.sprite.width * 0.5, total_height - (self.y - self.sprite.height * 0.5))
+        ]
+
+        tmx_object = type('FakeTiledObject', (object,), {})
+        tmx_object.x = x
+        tmx_object.y = y
+        tmx_object.points = points
+        tmx_object.type = 'SHIP'
+        tmx_object.name = 'SHIP'
+
+        self.collider = Collider(tmx_object=tmx_object, total_height=total_height)
+
+    def set_position(self, x: float, y: float) -> None:
+        self.x = x
+        self.y = y
+        self.position = euclid.Vector2(x, y)
+
+    def update(self, viewport_delta: float) -> None:
+        """Update the position of the ship.
+
+        This is the place that we will calculate the movement of the ship when it is doing
+        fancy manoeuvres around the screen."""
+        y = int(self.x - viewport_delta)
+        self.set_position(x=self.x, y=y)
+
+
 class MyApplication(arcade.Window):
     """
     Main application class.
@@ -179,7 +223,7 @@ class MyApplication(arcade.Window):
 
     def setup(self) -> None:
         self.all_sprites_list = arcade.SpriteList()
-        self.enemies = arcade.SpriteList()
+        self.enemies = []
         sprite_coordinates = []
 
         level = pytmx.TiledMap('../assets/levels/pim-test-3.tmx')
@@ -238,25 +282,29 @@ class MyApplication(arcade.Window):
             y = int(sprite.position[1] - viewport_delta)
             sprite.set_position(center_x=x, center_y=y)
             sprite.update()
-        for sprite in self.enemies:
-            x = sprite.position[0]
-            y = int(sprite.position[1] - viewport_delta)
-            sprite.set_position(center_x=x, center_y=y)
-            sprite.update()
+
+        for enemy in self.enemies:
+            enemy.update(viewport_delta=viewport_delta)
 
         for collider in self.collisions:
+            # print('--- START ---')
             if collider.is_polygon:
+                # if collider.name == 'SHIP':
+                #     print('BEFORE', collider.points)
                 points = []
                 for point in collider.points:
                     x = point[0]
                     y = int(point[1] - viewport_delta)
                     points.append((x, y))
                 collider.points = points
+                # if collider.name == 'SHIP':
+                #     print('AFTER', collider.points)
             else:
                 x = collider.center_x
                 y = int(collider.center_y - viewport_delta)
                 collider.center_x = x
                 collider.center_y = y
+            # print('--- END ---')
 
         for spawn in self.spawn_points:
             x = spawn.center_x
@@ -281,7 +329,7 @@ class MyApplication(arcade.Window):
 
         for spawn_point in self.spawn_points:
             if spawn_point.center_y < spawn_barrier and not spawn_point.has_spawned:
-                spawn_point.spawn(self.enemies)
+                spawn_point.spawn(enemies_list=self.enemies, sprites=self.all_sprites_list, colliders=self.collisions)
 
         acceleration = (self.input_map['FORWARD'] + self.input_map['BACKWARD'] + self.input_map['LEFT'] + self.input_map['RIGHT']) * 100
         centre = self.player.position + (acceleration * delta_time)
@@ -301,7 +349,7 @@ class MyApplication(arcade.Window):
 
         for collider in self.collisions:
             if self.player.test_collision(collider):
-                if collider.type == 'ROCK':
+                if collider.type in ['ROCK', 'SHIP']:
                     sprite = arcade.Sprite()
                     sprite.append_texture(self.sprite_sheet[6])
                     sprite.set_position(center_x=self.player.x, center_y=self.player.y - self.player.height * 0.5)
@@ -337,7 +385,7 @@ class MyApplication(arcade.Window):
 
         # Draw all the sprites.
         self.all_sprites_list.draw()
-        self.enemies.draw()
+
         if __debug__:
             for collision in self.collisions:
                 if collision.is_polygon:

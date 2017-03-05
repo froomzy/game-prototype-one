@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="22" height="70" tilewidth="64" tileheight="64" nextobjectid="14">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="22" height="70" tilewidth="64" tileheight="64" nextobjectid="15">
  <tileset firstgid="1" name="Islands" tilewidth="64" tileheight="64" tilecount="96" columns="16">
   <image source="../sprites/tiles_sheet.png" width="1024" height="384"/>
  </tileset>
@@ -308,6 +308,9 @@
   </object>
   <object id="10" type="LAND" x="523" y="3265">
    <polygon points="0,0 34,10 52,69 51,157 42,229 -5,249 -90,255 -114,242 -135,199 -134,157 -98,134 -72,127 -71,42 -62,21 -38,9"/>
+  </object>
+  <object id="14" type="ROCK" x="645" y="3204" width="54" height="54">
+   <ellipse/>
   </object>
  </objectgroup>
  <objectgroup name="spawns">

@@ -17,6 +17,16 @@ SPAWN_TYPES = {
 }
 
 
+def process_collisions(colliders: List['Collider'], player: 'Collider', viewport: Tuple[euclid.Vector2, euclid.Vector2]) -> None:
+    # TODO (Dylan): This will figure out the collisions, but there is nothing to actually influence the objects in the world
+
+    # Broad Pass: Collect colliders that are colliding with the viewport
+
+    # Narrow Pass: Test each collider in the set against the others using a stepped process
+
+    pass
+
+
 class SpawnPoint:
     def __init__(self, tmx_object: pytmx.TiledObject, textures: List[arcade.Texture], total_height: int) -> None:
         self.center_x = tmx_object.x

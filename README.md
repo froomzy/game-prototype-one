@@ -30,3 +30,16 @@ Enemy ships will come in waves known as **convoies**. Each **convoy** will conta
 At several points throughout the level the player will encounter **fortresses**. These **fortresses** will consist of some walls and towers with **cannons**. The player can destroy these just as they do **convoys**. If the player destroys all a **fortresses** **cannons** then they will recieve extra **cargo**.
 
 The **boss** of the level is Arch Duke Gediminas. He will be encountered aboard his flagship, *Gangut*. There will be several phases to the **boss** fight, but these still need to be designed. After each phase is completed, the player will have a short respite before the next begins. More to be decided about how this will work.
+
+## Retrospective
+Mostly this went well. I learned a bit about the way that tmx files work, and how to use Arcade. I did the work at 5am in the morning, waking up and staying in bed to do this. This was good because I was waking up and getting things done, but it was bad because I was lying in bed. The failure for this prototype came when I had a couple of stressy days that lead to me not wanting to do the learning I needed to to get collision detection working the way I wanted it to. This lead me to not actually complete my four weeks, and that made me sad.
+
+### Pros
+- Working on it each day at 5am left me feeling like I achieved things
+- Knowing a bit more about how TMX files from Tiled work
+- Used Arcade
+
+### Cons
+- Early morning with out getting out of bed were not the greatest idea
+- Collision detection is hard, and I need to sort it out before I can really go any further
+- External stress leads to demotivation leads to not finishing
